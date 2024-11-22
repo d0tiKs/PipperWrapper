@@ -1,0 +1,4 @@
+piper-websocket-tts-server
+.*.swp
+go.sum
+server/build
