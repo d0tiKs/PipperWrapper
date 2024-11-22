@@ -47,7 +47,10 @@ echo '{"text": "Hello world"}' | websocat -t ws://localhost:8080/tts
 - Single voice model currently supported
 
 ## ToDo
-- Using a configuration file instead of static path
+[] Using a configuration file instead of static path
+[] use `gorilla/mux` instead of `net/http`
+- [] generate swagger documentation with `summerfish-swager`
+[] Choose a license 
 
 ## License
 [Specify your license]
