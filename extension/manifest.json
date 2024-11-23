@@ -1,0 +1,23 @@
+{
+  "name": "Text-to-Speech Sender",
+  "description": "Send selected text to a local TTS server via WebSocket",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": [
+    "contextMenus",
+    "storage"
+  ],
+  "host_permissions": [
+    "ws://*/*",
+    "wss://*/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "options_page": "settings.html",
+  "icons": {
+    "16": "images/icon-16.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  }
+}

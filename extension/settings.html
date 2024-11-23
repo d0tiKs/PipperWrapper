@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Settings</title>
+  <style>
+    body { padding: 20px; }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .switch {
+      width: 60px;
+      height: 34px;
+      position: relative;
+      display: inline-block;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #2196F3; }
+    input:checked + .slider:before { transform: translateX(26px); }
+    .switch input { display: none; }
+    .input-field {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 200px;
+    }
+    label {
+      min-width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="setting-row">
+    <label class="switch">
+      <input type="checkbox" id="debugMode">
+      <span class="slider"></span>
+    </label>
+    <span>Debug Mode</span>
+  </div>
+  <div class="setting-row">
+    <label>Server:</label>
+    <input type="text" id="serverAddress" class="input-field" placeholder="e.g., localhost">
+  </div>
+  <div class="setting-row">
+    <label>Port:</label>
+    <input type="number" id="serverPort" class="input-field" placeholder="e.g., 3000">
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html> 
