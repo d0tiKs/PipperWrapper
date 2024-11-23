@@ -37,6 +37,9 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		var req_body = fmt.Sprintf("body :\n%s", req.Text)
+		log.Println(req_body)
+
 		// Create Piper command
 		piperCmd := exec.Command("piper",
 			"--model", "/usr/local/share/piper/voices/en_US-hfc_female-medium.onnx",
@@ -104,7 +107,7 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/tts", handleTTS)
 	
-	port := 8080
+	port := 18080
 	fmt.Printf("Server starting on port %d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
