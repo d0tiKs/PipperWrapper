@@ -1,7 +1,7 @@
 # Piper TTS WebSocket Server
 
 ## Overview
-A WebSocket server that converts text to speech using Piper TTS, allowing remote TTS requests via WebSocket protocol.
+A WebSocket server that converts text to speech using Piper TTS, allowing remote TTS requests via the WebSocket protocol.
 
 ## Prerequisites
 - Go 1.22.9+
@@ -9,48 +9,50 @@ A WebSocket server that converts text to speech using Piper TTS, allowing remote
 - aplay (for audio playback)
 
 ## Installation
+To set up the server, run the following commands:
 ```bash
 go mod tidy
 go build -o piper-websocket-tts-server
 ```
 
 ## Configuration
-Modify server settings in source code:
+Modify server settings in the source code:
 - WebSocket port (default: 8080)
 - Piper voice model path
 
 ## Usage
 ### Start Server
+To start the server, execute:
 ```bash
 ./piper-websocket-tts-server
 ```
 
 ### Client Request Format
-Send JSON:
+Send JSON requests in the following format:
 ```json
 {
-  "text": "Hello, world!",
+  "text": "Hello, world!"
 }
 ```
 
 ## Testing
-Use `websocat`:
+You can test the server using `websocat`:
 ```bash
 echo '{"text": "Hello world"}' | websocat -t ws://localhost:8080/tts
 ```
 
 ## Dependencies
-- github.com/gorilla/websocket
+- [github.com/gorilla/websocket](https://github.com/gorilla/websocket)
 
 ## Limitations
-- Requires local Piper TTS installation
-- Single voice model currently supported
+- Requires a local Piper TTS installation
+- Currently supports a single voice model
 
 ## ToDo
-[] Using a configuration file instead of static path
-[] use `gorilla/mux` instead of `net/http`
-- [] generate swagger documentation with `summerfish-swager`
-[] Choose a license 
+- [ ] Implement configuration file support
+- [ ] Use `gorilla/mux` instead of `net/http`
+- [ ] Generate Swagger documentation with `summerfish-swagger`
+- [ ] Choose a license
 
 ## License
 [Specify your license]

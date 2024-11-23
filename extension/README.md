@@ -11,6 +11,7 @@ A Chrome extension that sends selected text to a local TTS (Text-to-Speech) serv
 
 ## Installation
 
+To install the extension, follow these steps:
 1. Clone this repository or download the source code
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
