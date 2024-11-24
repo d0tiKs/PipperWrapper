@@ -97,16 +97,16 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 
 		// Wait for commands to complete
 		go func() {
-			defer conn.WriteJSON(map[string]string{"status": "success"})
-			piperCmd.Wait()
 			aplayCmd.Wait()
+			piperCmd.Wait()
+			defer conn.WriteJSON(map[string]string{"status": "success"})
 		}()
 	}
 }
 
 func main() {
 	http.HandleFunc("/tts", handleTTS)
-	
+
 	port := 18080
 	fmt.Printf("Server starting on port %d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
