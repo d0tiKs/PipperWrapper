@@ -21,7 +21,7 @@
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
       background-color: #ccc;
-      transition: .4s;
+      transition: .2s;
       border-radius: 34px;
     }
     .slider:before {
@@ -32,11 +32,11 @@
       left: 4px;
       bottom: 4px;
       background-color: white;
-      transition: .4s;
+      transition: .2s;
       border-radius: 50%;
     }
     input:checked + .slider { background-color: #2196F3; }
-    input:checked + .slider:before { transform: translateX(26px); }
+    input:checked + .slider:before { transform: translateX(46px) }
     .switch input { display: none; }
     .input-field {
       padding: 8px;
@@ -51,11 +51,11 @@
 </head>
 <body>
   <div class="setting-row">
+    <label for="debugMode">Debug Mode</label>
     <label class="switch">
       <input type="checkbox" id="debugMode">
       <span class="slider"></span>
     </label>
-    <span>Debug Mode</span>
   </div>
   <div class="setting-row">
     <label>Server:</label>

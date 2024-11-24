@@ -16,9 +16,21 @@ document.getElementById('debugMode').addEventListener('change', (e) => {
 });
 
 document.getElementById('serverAddress').addEventListener('change', (e) => {
-  chrome.storage.local.set({ SERVER_ADDRESS: e.target.value });
+  const newAddress = e.target.value;
+  chrome.storage.local.set({ SERVER_ADDRESS: newAddress });
+  chrome.runtime.sendMessage({
+    type: 'WEBSOCKET_CONFIG_CHANGED',
+    serverAddress: newAddress,
+    serverPort: document.getElementById('serverPort').value // Send current port
+  });
 });
 
 document.getElementById('serverPort').addEventListener('change', (e) => {
-  chrome.storage.local.set({ SERVER_PORT: e.target.value });
+  const newPort = e.target.value;
+  chrome.storage.local.set({ SERVER_PORT: newPort });
+  chrome.runtime.sendMessage({
+    type: 'WEBSOCKET_CONFIG_CHANGED',
+    serverAddress: document.getElementById('serverAddress').value, // Send current address
+    serverPort: newPort
+  });
 }); 
