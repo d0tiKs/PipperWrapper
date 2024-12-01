@@ -43,11 +43,11 @@ echo '{"text": "Hello world", "language" : "en" }' | websocat -t ws://localhost:
 ```
 
 ## Dependencies
+- [github.com/rhasspy/piper](https://github.com/rhasspy/piper)
 - [github.com/gorilla/websocket](https://github.com/gorilla/websocket)
 
 ## Limitations
 - Requires a local Piper TTS installation
-- Currently supports a single voice model
 
 ## ToDo
 - [ ] Implement configuration file support
