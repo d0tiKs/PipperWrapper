@@ -31,14 +31,15 @@ To start the server, execute:
 Send JSON requests in the following format:
 ```json
 {
-  "text": "Hello, world!"
+  "text": "Hello, world!",
+  "language": "en"
 }
 ```
 
 ## Testing
 You can test the server using `websocat`:
 ```bash
-echo '{"text": "Hello world"}' | websocat -t ws://localhost:8080/tts
+echo '{"text": "Hello world", "language" : "en" }' | websocat -t ws://localhost:8080/tts
 ```
 
 ## Dependencies
@@ -53,6 +54,8 @@ echo '{"text": "Hello world"}' | websocat -t ws://localhost:8080/tts
 - [ ] Use `gorilla/mux` instead of `net/http`
 - [ ] Generate Swagger documentation with `summerfish-swagger`
 - [ ] Choose a license
+- [ ] Install script that setup env and user
+- [ ] Add service user to service
 
 ## License
 [Specify your license]

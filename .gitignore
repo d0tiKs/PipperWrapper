@@ -2,3 +2,5 @@ piper-websocket-tts-server
 .*.swp
 go.sum
 server/build
+server/__debug_bin*
+.vscode/
