@@ -2,6 +2,7 @@ package main
 
 import (
 	//"flag"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -19,7 +20,7 @@ const (
 	D_LISTENING_IP = "127.0.0.1"
 
 	// PIPER SETTINGS
-	D_MODEL_PATH = "/usr/local/share/piper/voices/en_US-hfc_female-medium.onnx"
+	D_MODEL = "en"
 )
 
 var languageModels = map[string]string{
@@ -38,6 +39,82 @@ type TTSRequest struct {
 	Text     string `json:"text"`
 	Language string `json:"language"`
 	Voice    string `json:"voice,omitempty"`
+}
+
+func ttsToHost(conn *websocket.Conn, model_path string, text string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create Piper command
+	piperCmd := exec.CommandContext(ctx, "piper", "--model", model_path, "--output-raw")
+
+	// Create aplay command
+	aplayCmd := exec.CommandContext(ctx, "aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw")
+
+	// Create pipes
+	piperStdin, err := piperCmd.StdinPipe()
+	if err != nil {
+		log.Println("Piper stdin pipe error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to piper"})
+		return
+	}
+	defer piperStdin.Close()
+
+	piperStdout, err := piperCmd.StdoutPipe()
+	if err != nil {
+		log.Println("Piper stdout pipe error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not create stdout pipe from piper"})
+		return
+	}
+	defer piperStdout.Close()
+
+	aplayStdin, err := aplayCmd.StdinPipe()
+	if err != nil {
+		log.Println("aplay stdin pipe error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to aplay"})
+		return
+	}
+	defer aplayStdin.Close()
+
+	// Start commands
+	if err := piperCmd.Start(); err != nil {
+		log.Println("Piper start error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not start piper"})
+		return
+	}
+
+	if err := aplayCmd.Start(); err != nil {
+		log.Println("aplay start error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not start aplay"})
+		return
+	}
+
+	// Write text to piper
+	go func() {
+		defer piperStdin.Close()
+		if _, err := piperStdin.Write([]byte(text)); err != nil {
+			log.Println("Error writing to piper stdin:", err)
+		}
+	}()
+
+	// Pipe piper output to aplay
+	go func() {
+		defer aplayStdin.Close()
+		if _, err := io.Copy(aplayStdin, piperStdout); err != nil {
+			log.Println("Error copying from piper stdout to aplay stdin:", err)
+		}
+	}()
+
+	// Wait for commands to complete
+	go func() {
+		defer conn.WriteJSON(map[string]string{"status": "success"})
+		if err := aplayCmd.Wait(); err != nil {
+			log.Println("aplay wait error:", err)
+		}
+		if err := piperCmd.Wait(); err != nil {
+			log.Println("piper wait error:", err)
+		}
+	}()
 }
 
 func handleTTS(w http.ResponseWriter, r *http.Request) {
@@ -59,82 +136,22 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 		var req_body = fmt.Sprintf("body :\n%s", req)
 		log.Println(req_body)
 
-		modelPath := ""
+		model_path := ""
 		if req.Language == "" {
 			// Default model
-			modelPath = D_MODEL_PATH
+			model_path = languageModels[D_MODEL]
 		} else {
 			// Determine the model path based on the language
-			modelPath = languageModels[req.Language]
+			model_path = languageModels[req.Language]
 		}
 
-		if modelPath == "" {
+		if model_path == "" {
 			log.Printf("No model found for language: %s", req.Language)
 			conn.WriteJSON(map[string]string{"error": "Unsupported language"})
 			continue
 		}
 
-		// Create Piper command
-		piperCmd := exec.Command("piper",
-			"--model", modelPath,
-			"--output-raw")
-
-		// Create aplay command
-		aplayCmd := exec.Command("aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw")
-
-		// Create pipes
-		piperStdin, err := piperCmd.StdinPipe()
-		if err != nil {
-			log.Println("Piper stdin pipe error:", err)
-			conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to piper"})
-			continue
-		}
-
-		piperStdout, err := piperCmd.StdoutPipe()
-		if err != nil {
-			log.Println("Piper stdout pipe error:", err)
-			conn.WriteJSON(map[string]string{"error": "Could not create stdout pipe from piper"})
-			continue
-		}
-
-		aplayStdin, err := aplayCmd.StdinPipe()
-		if err != nil {
-			log.Println("aplay stdin pipe error:", err)
-			conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to aplay"})
-			continue
-		}
-
-		// Start commands
-		if err := piperCmd.Start(); err != nil {
-			log.Println("Piper start error:", err)
-			conn.WriteJSON(map[string]string{"error": "Could not start piper"})
-			continue
-		}
-
-		if err := aplayCmd.Start(); err != nil {
-			log.Println("aplay start error:", err)
-			conn.WriteJSON(map[string]string{"error": "Could not start aplay"})
-			continue
-		}
-
-		// Write text to piper
-		go func() {
-			defer piperStdin.Close()
-			piperStdin.Write([]byte(req.Text))
-		}()
-
-		// Pipe piper output to aplay
-		go func() {
-			defer aplayStdin.Close()
-			io.Copy(aplayStdin, piperStdout)
-		}()
-
-		// Wait for commands to complete
-		go func() {
-			aplayCmd.Wait()
-			piperCmd.Wait()
-			defer conn.WriteJSON(map[string]string{"status": "success"})
-		}()
+		ttsToHost(conn, model_path, req.Text)
 	}
 }
 
@@ -197,7 +214,7 @@ func initOptions() {
 	// Create a new parser
 	parser := flags.NewParser(&opts, flags.Default)
 
-	defaultValues := fmt.Sprintf("\nHelp Options:\n\t-h, --help'\tShow this help message\nDefault Values:\n\tport: %d\n\tlistening ip: %s\n\tmodel: %s\n", D_PORT, D_LISTENING_IP, D_MODEL_PATH)
+	defaultValues := fmt.Sprintf("\nHelp Options:\n\t-h, --help'\tShow this help message\nDefault Values:\n\tport: %d\n\tlistening ip: %s\n\tmodel: %s\n", D_PORT, D_LISTENING_IP, D_MODEL)
 
 	parser.Usage = defaultValues
 	// Parse the command line arguments
