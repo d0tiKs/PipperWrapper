@@ -49,6 +49,11 @@ echo '{"text": "Hello world", "language" : "en" }' | websocat -t ws://localhost:
 ## Limitations
 - Requires a local Piper TTS installation
 
+## In Progress
+- Send voice over the websocket
+- Command Line arguments + usage
+- Config file
+
 ## ToDo
 - [ ] Implement configuration file support
 - [ ] Use `gorilla/mux` instead of `net/http`
@@ -56,10 +61,9 @@ echo '{"text": "Hello world", "language" : "en" }' | websocat -t ws://localhost:
 - [ ] Choose a license
 - [ ] Install script that setup env and user
 - [ ] Add service user to service
-- [ ] Config file
-- [ ] Command Line arguments + usage
-- [ ] Send voice over the websocket
 - [ ] Detect the text's language automaticaly
+
+
 
 ## License
 [Specify your license]

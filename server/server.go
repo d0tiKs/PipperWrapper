@@ -2,7 +2,9 @@ package main
 
 import (
 	//"flag"
+
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -19,8 +21,13 @@ const (
 	D_PORT         = 18080
 	D_LISTENING_IP = "127.0.0.1"
 
+	//WEBSOCKET SETTINGS
+	D_VOICE_PACKET_BUFFER = 4096
+
 	// PIPER SETTINGS
-	D_MODEL = "en"
+	D_MODEL             = "en"
+	D_TEMP_FILE_DIR     = "/var/tmp/tts/"
+	D_AUDIO_FILE_FORMAT = "wav"
 )
 
 var languageModels = map[string]string{
@@ -41,12 +48,12 @@ type TTSRequest struct {
 	Voice    string `json:"voice,omitempty"`
 }
 
-func ttsToHost(conn *websocket.Conn, model_path string, text string) {
+func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Create Piper command
-	piperCmd := exec.CommandContext(ctx, "piper", "--model", model_path, "--output-raw")
+	piperCmd := exec.CommandContext(ctx, "piper", "--model", modelPath, "--output-raw")
 
 	// Create aplay command
 	aplayCmd := exec.CommandContext(ctx, "aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw")
@@ -117,6 +124,74 @@ func ttsToHost(conn *websocket.Conn, model_path string, text string) {
 	}()
 }
 
+func ttsToWebSocket(conn *websocket.Conn, modelPath string, text string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create a temporary file to store the audio data
+	tempFile, err := os.CreateTemp(D_TEMP_FILE_DIR, "audio-*."+D_AUDIO_FILE_FORMAT)
+	if err != nil {
+		log.Println("Error creating temporary file:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not create temporary file"})
+		return
+	}
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
+	// Create Piper command to output to the temporary file
+	piperCmd := exec.CommandContext(ctx, "piper", "-t", D_AUDIO_FILE_FORMAT, "--model", modelPath, "--output_file", tempFile.Name())
+
+	// Create stdin pipe
+	piperStdin, err := piperCmd.StdinPipe()
+	if err != nil {
+		log.Println("Piper stdin pipe error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to piper"})
+		return
+	}
+	defer piperStdin.Close()
+
+	// Start the piper command
+	if err := piperCmd.Start(); err != nil {
+		log.Println("Piper start error:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not start piper"})
+		return
+	}
+
+	// Write text to piper
+	go func() {
+		defer piperStdin.Close()
+		if _, err := piperStdin.Write([]byte(text)); err != nil {
+			log.Println("Error writing to piper stdin:", err)
+		}
+	}()
+
+	// Wait for the piper command to complete
+	if err := piperCmd.Wait(); err != nil {
+		log.Println("Piper wait error:", err)
+	}
+
+	// Read the audio data from the temporary file and send it over WebSocket
+	audioData, err := io.ReadAll(tempFile)
+	if err != nil {
+		log.Println("Error reading audio data from temporary file:", err)
+		conn.WriteJSON(map[string]string{"error": "Could not read audio data from temporary file"})
+		return
+	}
+
+	// Encode the audio data using Base64
+	encodedAudioData := base64.StdEncoding.EncodeToString(audioData)
+
+	// Send the encoded audio data over WebSocket
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(encodedAudioData)); err != nil {
+		log.Println("Error writing to WebSocket:", err)
+		return
+	}
+
+	if err := conn.WriteJSON(map[string]string{"status": "success"}); err != nil {
+		log.Println("Error sending success status:", err)
+	}
+}
+
 func handleTTS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -136,22 +211,23 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 		var req_body = fmt.Sprintf("body :\n%s", req)
 		log.Println(req_body)
 
-		model_path := ""
+		modelPath := ""
 		if req.Language == "" {
 			// Default model
-			model_path = languageModels[D_MODEL]
+			modelPath = languageModels[D_MODEL]
 		} else {
 			// Determine the model path based on the language
-			model_path = languageModels[req.Language]
+			modelPath = languageModels[req.Language]
 		}
 
-		if model_path == "" {
+		if modelPath == "" {
 			log.Printf("No model found for language: %s", req.Language)
 			conn.WriteJSON(map[string]string{"error": "Unsupported language"})
 			continue
 		}
 
-		ttsToHost(conn, model_path, req.Text)
+		//ttsToHost(conn, modelPath, req.Text)
+		ttsToWebSocket(conn, modelPath, req.Text)
 	}
 }
 
