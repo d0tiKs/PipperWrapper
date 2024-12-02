@@ -56,6 +56,10 @@ echo '{"text": "Hello world", "language" : "en" }' | websocat -t ws://localhost:
 - [ ] Choose a license
 - [ ] Install script that setup env and user
 - [ ] Add service user to service
+- [ ] Config file
+- [ ] Command Line arguments + usage
+- [ ] Send voice over the websocket
+- [ ] Detect the text's language automaticaly
 
 ## License
 [Specify your license]

@@ -50,6 +50,12 @@ To view logs:
 3. Click on "service worker" under "Inspect views"
 4. Check the Console tab for debug information
 
+## TODO
+
+- [ ] choose language
+- [ ] play/pause/resume
+- [ ] small display
+
 ## License
 
 TODO Define license
