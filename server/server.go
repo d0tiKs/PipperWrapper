@@ -49,8 +49,7 @@ type TTSRequest struct {
 }
 
 func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, _ := context.WithCancel(context.Background())
 
 	// Create Piper command
 	piperCmd := exec.CommandContext(ctx, "piper", "--model", modelPath, "--output-raw")
@@ -65,7 +64,6 @@ func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 		conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to piper"})
 		return
 	}
-	defer piperStdin.Close()
 
 	piperStdout, err := piperCmd.StdoutPipe()
 	if err != nil {
@@ -73,7 +71,6 @@ func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 		conn.WriteJSON(map[string]string{"error": "Could not create stdout pipe from piper"})
 		return
 	}
-	defer piperStdout.Close()
 
 	aplayStdin, err := aplayCmd.StdinPipe()
 	if err != nil {
@@ -81,7 +78,6 @@ func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 		conn.WriteJSON(map[string]string{"error": "Could not create stdin pipe to aplay"})
 		return
 	}
-	defer aplayStdin.Close()
 
 	// Start commands
 	if err := piperCmd.Start(); err != nil {
@@ -95,7 +91,6 @@ func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 		conn.WriteJSON(map[string]string{"error": "Could not start aplay"})
 		return
 	}
-
 	// Write text to piper
 	go func() {
 		defer piperStdin.Close()
@@ -121,6 +116,9 @@ func ttsToHost(conn *websocket.Conn, modelPath string, text string) {
 		if err := piperCmd.Wait(); err != nil {
 			log.Println("piper wait error:", err)
 		}
+		defer piperStdin.Close()
+		defer aplayStdin.Close()
+		defer piperStdout.Close()
 	}()
 }
 
@@ -226,8 +224,8 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		//ttsToHost(conn, modelPath, req.Text)
-		ttsToWebSocket(conn, modelPath, req.Text)
+		ttsToHost(conn, modelPath, req.Text)
+		//ttsToWebSocket(conn, modelPath, req.Text)
 	}
 }
 
